@@ -1,0 +1,26 @@
+up:
+  - type: CreateTable
+    name: Comments
+    columns:
+      - type: String
+        name: statusUuid
+        required: true
+        maxLength: 64
+      - type: Timestamp
+        name: createdAt
+        required: true
+      - type: String
+        name: uuid
+        required: true
+        maxLength: 64
+      - type: Int64
+        name: userRegId
+        required: true
+      - type: String
+        name: content
+        required: true
+    primaryKeys:
+      - name: statusUuid
+      - name: createdAt
+        order: desc
+      - name: uuid

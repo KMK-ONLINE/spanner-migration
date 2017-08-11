@@ -1,0 +1,21 @@
+up:
+  - type: CreateTable
+    name: Status
+    columns:
+      - type: Int64
+        name: userRegId
+        required: true
+      - type: Timestamp
+        name: createdAt
+        required: true
+      - type: String
+        name: uuid
+        maxLength: 64
+      - type: String
+        name: newData
+        maxLength: 160
+    primaryKeys:
+      - name: userRegId
+      - name: createdAt
+        order: desc
+      - name: uuid
