@@ -10,7 +10,7 @@ up:
   - type: CreateTable
     name: Status
     columns:
-      - type: Int65
+      - type: Int64
         name: userRegId
         required: true
       - type: Timestamp
