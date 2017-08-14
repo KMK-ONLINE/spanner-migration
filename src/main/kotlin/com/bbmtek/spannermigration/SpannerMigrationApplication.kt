@@ -1,7 +1,10 @@
 package com.bbmtek.spannermigration
 
+import com.bbmtek.spannermigration.database.SpannerDB
+import com.bbmtek.spannermigration.database.SpannerDBImpl
 import com.bbmtek.spannermigration.model.MigrationUp
 import com.bbmtek.spannermigration.model.Migrations
+import com.beust.jcommander.JCommander
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
 import com.google.cloud.WaitForOption
@@ -15,31 +18,50 @@ import java.util.concurrent.TimeUnit
 class SpannerMigrationApplication {
     lateinit var dbClient: DatabaseClient
     lateinit var dbAdminClient: DatabaseAdminClient
+    lateinit var settings: Settings
+    lateinit var spannerDb: SpannerDB
 
-    private var migrationDir = "${System.getProperty("user.dir")}/examples/migrate"
-    private var instanceId = "test-migration"
-    private val databaseId = "migration"
     private val schemaMigrationTableName = "SchemaMigrations"
 
-    fun main(args: Array<String>) {
-        val options = SpannerOptions.newBuilder().build()
-        val spanner = options.getService()
-        dbClient = spanner.getDatabaseClient(DatabaseId.of(options.projectId, instanceId, databaseId))
-        dbAdminClient = spanner.databaseAdminClient
-
-        if(!checkTableExists(dbClient, schemaMigrationTableName)) {
-            val createSchemaMigrationDdl = """
-            CREATE TABLE $schemaMigrationTableName (
-            version INT64 NOT NULL,
-            ) PRIMARY KEY (version)
-            """
-            val operation = dbAdminClient.updateDatabaseDdl(instanceId, databaseId, listOf(createSchemaMigrationDdl), null)
-            operation.waitFor(WaitForOption.checkEvery(1L, TimeUnit.SECONDS))
+    companion object {
+        @JvmStatic fun main(vararg argv: String) {
+            SpannerMigrationApplication().run(argv)
+            System.exit(0)
         }
+    }
 
-        val lastVersion = getLastMigratedVersion()
+    fun run(argv: Array<out String>) {
+        this.settings = Settings()
+        JCommander.newBuilder()
+                .addObject(settings)
+                .build()
+                .parse(*argv)
+        val (options, spanner) = initializeSpanner(settings)
 
-        getMigrations(lastVersion).forEach {
+        this.dbClient = spanner.getDatabaseClient(DatabaseId.of(options.projectId, settings.instanceId, settings.databaseId))
+        this.dbAdminClient = spanner.databaseAdminClient
+        this.spannerDb = SpannerDBImpl(dbAdminClient, dbClient, settings)
+
+        spannerDb.createSchemaMigrationsTable()
+
+        val lastVersion = spannerDb.getLastMigratedVersion()
+
+        val migrations = getMigrations(settings.migrationDir, lastVersion)
+
+        migrateDatabase(migrations)
+    }
+
+    private fun initializeSpanner(settings: Settings): Pair<SpannerOptions, Spanner> {
+        val options = SpannerOptions
+                .newBuilder()
+                .setProjectId(settings.projectId)
+                .build()
+        val spanner = options.service
+        return Pair(options, spanner)
+    }
+
+    private fun migrateDatabase(migrations: List<Migrations>) {
+        migrations.forEach {
             it.up.forEach {
                 when(it) {
                     is MigrationUp.CreateTable -> {
@@ -51,7 +73,7 @@ class SpannerMigrationApplication {
                         ${it.primaryKeysToSqlString()}
                         )
                         """
-                        dbAdminClient.updateDatabaseDdl(instanceId, databaseId, listOf(migrationDdl), null)
+                        dbAdminClient.updateDatabaseDdl(settings.instanceId, settings.databaseId, listOf(migrationDdl), null)
                                 .waitFor(WaitForOption.checkEvery(1L, TimeUnit.SECONDS))
                     }
                 }
@@ -65,16 +87,7 @@ class SpannerMigrationApplication {
         }
     }
 
-    private fun checkTableExists(dbClient: DatabaseClient, tableName: String): Boolean {
-        try {
-            dbClient.singleUse().executeQuery(Statement.of("SELECT 1 FROM $tableName")).next()
-            return true
-        } catch (e: SpannerException) {
-            return false
-        }
-    }
-
-    private fun getMigrations(lastVersion: Long): List<Migrations> {
+    private fun getMigrations(migrationDir: String, lastVersion: Long): List<Migrations> {
         val migrationFiles = File(migrationDir).listFiles()
         val migrations = arrayListOf<Migrations>()
         if(migrationFiles != null) {
@@ -89,15 +102,5 @@ class SpannerMigrationApplication {
             }
         }
         return migrations
-    }
-
-    private fun getLastMigratedVersion(): Long {
-        val resultSet = dbClient.singleUse().executeQuery(
-                Statement.of("SELECT version FROM $schemaMigrationTableName ORDER BY version DESC LIMIT 1"))
-        if (resultSet.next()) {
-            return resultSet.getLong(0)
-        } else {
-            return -1
-        }
     }
 }

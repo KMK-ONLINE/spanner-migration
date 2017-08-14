@@ -2,6 +2,7 @@ package com.bbmtek.spannermigration
 
 import com.google.cloud.WaitForOption
 import com.google.cloud.spanner.*
+import com.sun.javafx.runtime.SystemProperties
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
@@ -16,9 +17,17 @@ class SpannerMigrationApplicationTest {
     lateinit var dbClient: DatabaseClient
     lateinit var dbAdminClient: DatabaseAdminClient
 
+    private var migrationDir = "/home/woi/Workspace/spanner-migration/examples/migrate"
+    private var projectId = "bbm-dev"
     private var instanceId = "test-migration"
     private val databaseId = "migration"
     private val schemaMigrationTableName = "SchemaMigrations"
+
+    private val argv = arrayOf(
+            "--migration-dir", migrationDir,
+            "--project-id", projectId,
+            "--instance-id", instanceId,
+            "--database-id", databaseId)
 
     @Before
     fun setup() {
@@ -39,11 +48,13 @@ class SpannerMigrationApplicationTest {
         operation1.waitFor(WaitForOption.checkEvery(1L, TimeUnit.SECONDS))
         val operation2 = dbAdminClient.updateDatabaseDdl(instanceId, databaseId, listOf("DROP TABLE Status"), null)
         operation2.waitFor(WaitForOption.checkEvery(1L, TimeUnit.SECONDS))
+        val operation3 = dbAdminClient.updateDatabaseDdl(instanceId, databaseId, listOf("DROP TABLE Comments"), null)
+        operation3.waitFor(WaitForOption.checkEvery(1L, TimeUnit.SECONDS))
     }
 
     @Test
     fun `run for the first time`() {
-        SpannerMigrationApplication().main(arrayOf(""))
+        SpannerMigrationApplication().run(argv)
 
         assert(checkTableExists(dbClient, schemaMigrationTableName))
         assert(checkVersionHaveRow(dbClient))
@@ -57,7 +68,7 @@ class SpannerMigrationApplicationTest {
         createSchemaTable()
         createStatusTable()
 
-        SpannerMigrationApplication().main(arrayOf(""))
+        SpannerMigrationApplication().run(argv)
 
         assert(checkTableExists(dbClient, schemaMigrationTableName))
         assert(checkVersionHaveRow(dbClient))
@@ -71,7 +82,7 @@ class SpannerMigrationApplicationTest {
         createStatusTable()
         createCommentsTable()
 
-        SpannerMigrationApplication().main(arrayOf(""))
+        SpannerMigrationApplication().run(argv)
 
         assert(checkTableExists(dbClient, schemaMigrationTableName))
         assert(checkVersionHaveRow(dbClient))
