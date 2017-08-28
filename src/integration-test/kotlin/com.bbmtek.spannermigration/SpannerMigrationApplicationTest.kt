@@ -2,7 +2,6 @@ package com.bbmtek.spannermigration
 
 import com.google.cloud.WaitForOption
 import com.google.cloud.spanner.*
-import com.sun.javafx.runtime.SystemProperties
 import org.junit.After
 import org.junit.Before
 import org.junit.Test

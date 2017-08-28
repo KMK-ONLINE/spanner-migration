@@ -1,6 +1,10 @@
 package com.bbmtek.spannermigration.database
 
 import com.bbmtek.spannermigration.Settings
+import com.bbmtek.spannermigration.model.ColumnDefinition
+import com.bbmtek.spannermigration.model.MigrationUp
+import com.bbmtek.spannermigration.model.Migrations
+import com.bbmtek.spannermigration.model.PrimaryKeyDefinition
 import com.google.cloud.WaitForOption
 import com.google.cloud.spanner.*
 import com.google.spanner.admin.database.v1.UpdateDatabaseDdlMetadata
@@ -9,6 +13,7 @@ import org.junit.Before
 import org.junit.Test
 import org.mockito.ArgumentMatchers
 import org.mockito.Mock
+import org.mockito.Mockito
 import org.mockito.Mockito.*
 import org.mockito.MockitoAnnotations
 import java.util.concurrent.TimeUnit
@@ -108,5 +113,52 @@ class SpannerDBImplTest {
         spannerDbImpl.createSchemaMigrationsTable()
 
         verify(dbAdminClient, never()).updateDatabaseDdl(ArgumentMatchers.anyString(), ArgumentMatchers.anyString(), any(), eq(null))
+    }
+
+    @Test
+    fun `migrate database`() {
+        `when`(dbAdminClient.updateDatabaseDdl(ArgumentMatchers.anyString(), ArgumentMatchers.anyString(), any(), eq(null)))
+                .thenReturn(mockOperation)
+        `when`(mockOperation.waitFor(ArgumentMatchers.any())).thenReturn(mockOperation)
+
+        val migrations = listOf<Migrations>(Migrations(up = listOf(
+                MigrationUp.CreateTable(
+                        name = "Status",
+                        columns = listOf(
+                                ColumnDefinition.Int64("userRegId", true),
+                                ColumnDefinition.Timestamp("timestamp", true),
+                                ColumnDefinition.String("status", true),
+                                ColumnDefinition.String("newData")
+                        ),
+                        primaryKeys = listOf(
+                                PrimaryKeyDefinition("userRegId"),
+                                PrimaryKeyDefinition("timestamp", "DESC")
+                        )
+                ),
+                MigrationUp.AddColumns(
+                        name = "Status",
+                        columns = listOf(
+                                ColumnDefinition.Int64("likesCount")
+                        )
+                )
+        ), version = 1L))
+
+        val expectedCreateDDL = """
+                CREATE TABLE Status (
+                    userRegId Int64 NOT NULL,timestamp Timestamp NOT NULL,status String(MAX) NOT NULL,newData String(MAX)
+                ) PRIMARY KEY (
+                    userRegId ,timestamp DESC
+                )
+            """.trimIndent()
+
+        val expectedAlterDDL = """
+                ALTER TABLE Status ADD COLUMN likesCount Int64
+            """.trimIndent()
+
+        spannerDbImpl.migrate(migrations)
+
+        Mockito.verify(dbAdminClient).updateDatabaseDdl(settings.instanceId, settings.projectId, listOf(expectedCreateDDL), null)
+        Mockito.verify(dbAdminClient).updateDatabaseDdl(settings.instanceId, settings.projectId, listOf(expectedAlterDDL), null)
+        Mockito.verify(dbClient).write(ArgumentMatchers.anyList())
     }
 }

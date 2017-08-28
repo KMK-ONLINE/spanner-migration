@@ -2,26 +2,22 @@ package com.bbmtek.spannermigration
 
 import com.bbmtek.spannermigration.database.SpannerDB
 import com.bbmtek.spannermigration.database.SpannerDBImpl
-import com.bbmtek.spannermigration.model.MigrationUp
 import com.bbmtek.spannermigration.model.Migrations
 import com.beust.jcommander.JCommander
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
-import com.google.cloud.WaitForOption
-import com.google.cloud.spanner.*
+import com.google.cloud.spanner.DatabaseClient
+import com.google.cloud.spanner.DatabaseId
+import com.google.cloud.spanner.Spanner
+import com.google.cloud.spanner.SpannerOptions
 import java.io.File
-import java.util.concurrent.TimeUnit
 
 /**
  * Created by woi on 10/08/17.
  */
 class SpannerMigrationApplication {
-    lateinit var dbClient: DatabaseClient
-    lateinit var dbAdminClient: DatabaseAdminClient
     lateinit var settings: Settings
     lateinit var spannerDb: SpannerDB
-
-    private val schemaMigrationTableName = "SchemaMigrations"
 
     companion object {
         @JvmStatic fun main(vararg argv: String) {
@@ -38,17 +34,20 @@ class SpannerMigrationApplication {
                 .parse(*argv)
         val (options, spanner) = initializeSpanner(settings)
 
-        this.dbClient = spanner.getDatabaseClient(DatabaseId.of(options.projectId, settings.instanceId, settings.databaseId))
-        this.dbAdminClient = spanner.databaseAdminClient
-        this.spannerDb = SpannerDBImpl(dbAdminClient, dbClient, settings)
+        this.spannerDb = SpannerDBImpl(
+                spanner.databaseAdminClient,
+                databaseClient(spanner, options),
+                settings
+        )
 
         spannerDb.createSchemaMigrationsTable()
+        spannerDb.getLastMigratedVersion()
+                .let { getMigrations(settings.migrationDir, it) }
+                .let { spannerDb.migrate(it) }
+    }
 
-        val lastVersion = spannerDb.getLastMigratedVersion()
-
-        val migrations = getMigrations(settings.migrationDir, lastVersion)
-
-        migrateDatabase(migrations)
+    private fun databaseClient(spanner: Spanner, options: SpannerOptions): DatabaseClient {
+        return spanner.getDatabaseClient(DatabaseId.of(options.projectId, settings.instanceId, settings.databaseId))
     }
 
     private fun initializeSpanner(settings: Settings): Pair<SpannerOptions, Spanner> {
@@ -58,33 +57,6 @@ class SpannerMigrationApplication {
                 .build()
         val spanner = options.service
         return Pair(options, spanner)
-    }
-
-    private fun migrateDatabase(migrations: List<Migrations>) {
-        migrations.forEach {
-            it.up.forEach {
-                when(it) {
-                    is MigrationUp.CreateTable -> {
-                        val migrationDdl = """
-                        CREATE TABLE ${it.name} (
-                        ${it.columnsToSqlString()}
-                        )
-                        PRIMARY KEY (
-                        ${it.primaryKeysToSqlString()}
-                        )
-                        """
-                        dbAdminClient.updateDatabaseDdl(settings.instanceId, settings.databaseId, listOf(migrationDdl), null)
-                                .waitFor(WaitForOption.checkEvery(1L, TimeUnit.SECONDS))
-                    }
-                }
-            }
-            dbClient.write(
-                    listOf(
-                            Mutation.newInsertBuilder(schemaMigrationTableName)
-                                    .set("version").to(it.version).build()
-                    )
-            )
-        }
     }
 
     private fun getMigrations(migrationDir: String, lastVersion: Long): List<Migrations> {

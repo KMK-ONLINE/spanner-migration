@@ -10,39 +10,42 @@ data class Migrations(val up: List<MigrationUp> = listOf(), val version: Long = 
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type")
 @JsonSubTypes(*arrayOf(
-        JsonSubTypes.Type(value = MigrationUp.CreateTable::class, name = "CreateTable")
+        JsonSubTypes.Type(value = MigrationUp.CreateTable::class, name = "CreateTable"),
+        JsonSubTypes.Type(value = MigrationUp.AddColumns::class, name = "AddColumns")
 ))
 sealed class MigrationUp {
     abstract var name: kotlin.String
     abstract var columns: List<ColumnDefinition>
-    abstract var primaryKeys: List<PrimaryKeyDefinition>
 
     data class CreateTable(
             override var name: kotlin.String = "",
             override var columns: List<ColumnDefinition> = listOf(),
-            override var primaryKeys: List<PrimaryKeyDefinition> = listOf()
+            var primaryKeys: List<PrimaryKeyDefinition> = listOf()
     ) : MigrationUp() {
         fun columnsToSqlString(): kotlin.String {
             return this.columns
                     .map {
                         when(it) {
                             is ColumnDefinition.String -> {
-                                "${it.name} ${it.dataType()}(${it.maxLengthString()}) ${it.requiredString()}"
+                                "${it.name} ${it.dataType()}(${it.maxLengthString()}) ${it.requiredString()}".removeSuffix(" ")
                             }
                             else -> {
-                                "${it.name} ${it.dataType()} ${it.requiredString()}"
+                                "${it.name} ${it.dataType()} ${it.requiredString()}".removeSuffix(" ")
                             }
                         }
                     }
-                    .joinToString(", ")
+                    .joinToString(",")
         }
 
         fun primaryKeysToSqlString(): kotlin.String {
-            return this.primaryKeys
-                    .map { "${it.name} ${it.order}" }
-                    .joinToString(", ")
+            return this.primaryKeys.joinToString(",") { "${it.name} ${it.order}" }
         }
     }
+
+    data class AddColumns(
+            override var name: kotlin.String = "",
+            override var columns: List<ColumnDefinition> = listOf()
+    ) : MigrationUp()
 
 }
 
@@ -66,12 +69,9 @@ sealed class ColumnDefinition {
             override var required: Boolean = false,
             var maxLength: Int? = null
     ) : ColumnDefinition() {
-        fun maxLengthString(): kotlin.String {
-            return if(maxLength != null) {
-                maxLength.toString()
-            } else {
-                "MAX"
-            }
+        fun maxLengthString(): kotlin.String = when(maxLength) {
+            is Int -> maxLength.toString()
+            else -> "MAX"
         }
     }
 

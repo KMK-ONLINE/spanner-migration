@@ -1,0 +1,6 @@
+up:
+  - type: AddColumns
+    name: Status
+    columns:
+      - type: Int64
+        name: likesCount
