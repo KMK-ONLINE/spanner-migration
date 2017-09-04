@@ -23,6 +23,8 @@ class SpannerDBImpl(private val databaseAdminClient: DatabaseAdminClient,
             val operation = databaseAdminClient.updateDatabaseDdl(
                     settings.instanceId, settings.databaseId, listOf(createSchemaMigrationDdl), null)
             operation.waitFor(WaitForOption.checkEvery(1L, TimeUnit.SECONDS))
+
+            println("$schemaMigrationTableName created.")
         }
     }
 
@@ -58,6 +60,8 @@ class SpannerDBImpl(private val databaseAdminClient: DatabaseAdminClient,
                         """.trimIndent()
                         databaseAdminClient.updateDatabaseDdl(settings.instanceId, settings.databaseId, listOf(migrationDdl), null)
                                 .waitFor(WaitForOption.checkEvery(1L, TimeUnit.SECONDS))
+
+                        println("${it.name} table created.")
                     }
                     is MigrationUp.AddColumns -> {
                         val tableName = it.name
@@ -79,15 +83,20 @@ class SpannerDBImpl(private val databaseAdminClient: DatabaseAdminClient,
 
                         databaseAdminClient.updateDatabaseDdl(settings.instanceId, settings.databaseId, migrationDDLs, null)
                                 .waitFor(WaitForOption.checkEvery(1L, TimeUnit.SECONDS))
+
+                        println("Columns ${it.columns.joinToString(",") { it.name }} added to $tableName.")
                     }
                 }
             }
+
             databaseClient.write(
                     listOf(
                             Mutation.newInsertBuilder(schemaMigrationTableName)
                                     .set("version").to(it.version).build()
                     )
             )
+
+            println("Successfuly migrated ${it.version}")
         }
     }
 }
