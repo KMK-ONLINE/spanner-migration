@@ -2,22 +2,19 @@ package com.bbmtek.spannermigration
 
 import com.bbmtek.spannermigration.database.SpannerDB
 import com.bbmtek.spannermigration.database.SpannerDBImpl
-import com.bbmtek.spannermigration.model.Migrations
 import com.beust.jcommander.JCommander
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
 import com.google.cloud.spanner.DatabaseClient
 import com.google.cloud.spanner.DatabaseId
 import com.google.cloud.spanner.Spanner
 import com.google.cloud.spanner.SpannerOptions
-import java.io.File
 
 /**
  * Created by woi on 10/08/17.
  */
 class SpannerMigrationApplication {
-    lateinit var settings: Settings
-    lateinit var spannerDb: SpannerDB
+    private lateinit var settings: Settings
+    private lateinit var spannerDb: SpannerDB
+    private val migrationLoader = MigrationLoader()
 
     companion object {
         @JvmStatic fun main(vararg argv: String) {
@@ -42,7 +39,7 @@ class SpannerMigrationApplication {
 
         spannerDb.createSchemaMigrationsTable()
         spannerDb.getLastMigratedVersion()
-                .let { getMigrations(settings.migrationDir, it) }
+                .let { migrationLoader.loadMigrations(settings.migrationDir, it) }
                 .let { spannerDb.migrate(it) }
     }
 
@@ -57,22 +54,5 @@ class SpannerMigrationApplication {
                 .build()
         val spanner = options.service
         return Pair(options, spanner)
-    }
-
-    private fun getMigrations(migrationDir: String, lastVersion: Long): List<Migrations> {
-        val migrationFiles = File(migrationDir).listFiles()
-        val migrations = arrayListOf<Migrations>()
-        if(migrationFiles != null) {
-            val filteredFiles =  migrationFiles.filter {
-                it.nameWithoutExtension.split("_")[0].toLong() > lastVersion
-            }
-
-            val objectMapper = ObjectMapper(YAMLFactory())
-            filteredFiles.mapTo(migrations) {
-                objectMapper.readValue(it, Migrations::class.java)
-                        .copy(version = it.nameWithoutExtension.split("_")[0].toLong())
-            }
-        }
-        return migrations
     }
 }

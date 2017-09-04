@@ -59,8 +59,8 @@ class SpannerMigrationApplicationTest {
         assert(checkVersionHaveRow(dbClient))
         assert(checkTableExists(dbClient, "Status"))
         assert(checkTableExists(dbClient, "Comments"))
+        assert(checkColumnsExists(dbClient, "Status", arrayOf("likesCount")))
     }
-
 
     @Test
     fun `run all migration that has not been executed`() {
@@ -90,24 +90,33 @@ class SpannerMigrationApplicationTest {
     }
 
     private fun checkTableExists(dbClient: DatabaseClient, tableName: String): Boolean {
-        try {
+        return try {
             dbClient.singleUse().executeQuery(Statement.of("SELECT 1 FROM $tableName")).next()
-            return true
+            true
         } catch (e: SpannerException) {
-            return false
+            false
+        }
+    }
+
+    private fun checkColumnsExists(dbClient: DatabaseClient, tableName: String, columns: Array<String>): Boolean {
+        return try {
+            dbClient.singleUse().executeQuery(Statement.of("SELECT ${columns.joinToString(",")} FROM $tableName")).next()
+            true
+        } catch (e: SpannerException) {
+            false
         }
     }
 
     private fun  checkVersionHaveRow(dbClient: DatabaseClient): Boolean {
-        try {
+        return try {
             val resultSet = dbClient.singleUse().executeQuery(Statement.of("SELECT COUNT(1) FROM $schemaMigrationTableName"))
             if(resultSet.next()) {
-                return resultSet.getLong(0) > 0
+                resultSet.getLong(0) > 0
             } else {
-                return false
+                false
             }
         } catch (e: SpannerException) {
-            return false
+            false
         }
     }
 
