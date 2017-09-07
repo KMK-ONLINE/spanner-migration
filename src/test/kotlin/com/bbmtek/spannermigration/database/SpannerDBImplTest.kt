@@ -120,6 +120,7 @@ class SpannerDBImplTest {
         `when`(dbAdminClient.updateDatabaseDdl(ArgumentMatchers.anyString(), ArgumentMatchers.anyString(), any(), eq(null)))
                 .thenReturn(mockOperation)
         `when`(mockOperation.waitFor(ArgumentMatchers.any())).thenReturn(mockOperation)
+        `when`(mockOperation.isSuccessful).thenReturn(true)
 
         val migrations = listOf<Migrations>(Migrations(up = listOf(
                 MigrationUp.CreateTable(

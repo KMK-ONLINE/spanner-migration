@@ -15,6 +15,7 @@ class SpannerMigrationApplicationTest {
     lateinit var spanner: Spanner
     lateinit var dbClient: DatabaseClient
     lateinit var dbAdminClient: DatabaseAdminClient
+    lateinit var spannerMigrationApplication: SpannerMigrationApplication
 
     private var migrationDir = "/home/woi/Workspace/spanner-migration/examples/migrate"
     private var projectId = "bbm-dev"
@@ -31,7 +32,7 @@ class SpannerMigrationApplicationTest {
     @Before
     fun setup() {
         val options = SpannerOptions.newBuilder().build()
-        spanner = options.getService()
+        spanner = options.service
         dbClient = spanner.getDatabaseClient(DatabaseId.of(options.projectId, instanceId, databaseId))
         dbAdminClient = spanner.databaseAdminClient
 
@@ -39,6 +40,8 @@ class SpannerMigrationApplicationTest {
             val operation = dbAdminClient.updateDatabaseDdl(instanceId, databaseId, listOf("DROP TABLE $schemaMigrationTableName"), null)
             operation.waitFor(WaitForOption.checkEvery(1L, TimeUnit.SECONDS))
         }
+
+        spannerMigrationApplication = SpannerMigrationApplication()
     }
 
     @After
@@ -53,7 +56,7 @@ class SpannerMigrationApplicationTest {
 
     @Test
     fun `run for the first time`() {
-        SpannerMigrationApplication().run(argv)
+        spannerMigrationApplication.run(argv)
 
         assert(checkTableExists(dbClient, schemaMigrationTableName))
         assert(checkVersionHaveRow(dbClient))
@@ -67,7 +70,7 @@ class SpannerMigrationApplicationTest {
         createSchemaTable()
         createStatusTable()
 
-        SpannerMigrationApplication().run(argv)
+        spannerMigrationApplication.run(argv)
 
         assert(checkTableExists(dbClient, schemaMigrationTableName))
         assert(checkVersionHaveRow(dbClient))
@@ -81,7 +84,7 @@ class SpannerMigrationApplicationTest {
         createStatusTable()
         createCommentsTable()
 
-        SpannerMigrationApplication().run(argv)
+        spannerMigrationApplication.run(argv)
 
         assert(checkTableExists(dbClient, schemaMigrationTableName))
         assert(checkVersionHaveRow(dbClient))

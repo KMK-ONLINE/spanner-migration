@@ -22,7 +22,7 @@ class SpannerDBImpl(private val databaseAdminClient: DatabaseAdminClient,
                 """
             val operation = databaseAdminClient.updateDatabaseDdl(
                     settings.instanceId, settings.databaseId, listOf(createSchemaMigrationDdl), null)
-            operation.waitFor(WaitForOption.checkEvery(1L, TimeUnit.SECONDS))
+            operation.waitFor(WaitForOption.checkEvery(1L, TimeUnit.SECONDS)).result
 
             println("$schemaMigrationTableName created.")
         }
@@ -31,6 +31,7 @@ class SpannerDBImpl(private val databaseAdminClient: DatabaseAdminClient,
     override fun isTableExists(tableName: String): Boolean {
         return try {
             databaseClient.singleUse().executeQuery(Statement.of("SELECT 1 FROM $tableName")).next()
+            true
         } catch (e: SpannerException) {
             false
         }
@@ -60,6 +61,7 @@ class SpannerDBImpl(private val databaseAdminClient: DatabaseAdminClient,
                         """.trimIndent()
                         databaseAdminClient.updateDatabaseDdl(settings.instanceId, settings.databaseId, listOf(migrationDdl), null)
                                 .waitFor(WaitForOption.checkEvery(1L, TimeUnit.SECONDS))
+                                .result
 
                         println("${it.name} table created.")
                     }
@@ -83,6 +85,7 @@ class SpannerDBImpl(private val databaseAdminClient: DatabaseAdminClient,
 
                         databaseAdminClient.updateDatabaseDdl(settings.instanceId, settings.databaseId, migrationDDLs, null)
                                 .waitFor(WaitForOption.checkEvery(1L, TimeUnit.SECONDS))
+                                .result
 
                         println("Columns ${it.columns.joinToString(",") { it.name }} added to $tableName.")
                     }

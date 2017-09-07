@@ -14,12 +14,14 @@ import com.google.cloud.spanner.SpannerOptions
 class SpannerMigrationApplication {
     private lateinit var settings: Settings
     private lateinit var spannerDb: SpannerDB
+    private lateinit var spanner: Spanner
     private val migrationLoader = MigrationLoader()
 
     companion object {
         @JvmStatic fun main(vararg argv: String) {
-            SpannerMigrationApplication().run(argv)
-            System.exit(0)
+            val spannerMigration = SpannerMigrationApplication()
+            spannerMigration.run(argv)
+            spannerMigration.closeDb()
         }
     }
 
@@ -29,8 +31,11 @@ class SpannerMigrationApplication {
                 .addObject(settings)
                 .build()
                 .parse(*argv)
-        val (options, spanner) = initializeSpanner(settings)
-
+        val options = SpannerOptions
+                .newBuilder()
+                .setProjectId(settings.projectId)
+                .build()
+        spanner = options.service
         this.spannerDb = SpannerDBImpl(
                 spanner.databaseAdminClient,
                 databaseClient(spanner, options),
@@ -43,16 +48,11 @@ class SpannerMigrationApplication {
                 .let { spannerDb.migrate(it) }
     }
 
-    private fun databaseClient(spanner: Spanner, options: SpannerOptions): DatabaseClient {
-        return spanner.getDatabaseClient(DatabaseId.of(options.projectId, settings.instanceId, settings.databaseId))
+    fun closeDb() {
+        spanner.close()
     }
 
-    private fun initializeSpanner(settings: Settings): Pair<SpannerOptions, Spanner> {
-        val options = SpannerOptions
-                .newBuilder()
-                .setProjectId(settings.projectId)
-                .build()
-        val spanner = options.service
-        return Pair(options, spanner)
+    private fun databaseClient(spanner: Spanner, options: SpannerOptions): DatabaseClient {
+        return spanner.getDatabaseClient(DatabaseId.of(options.projectId, settings.instanceId, settings.databaseId))
     }
 }
