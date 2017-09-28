@@ -129,9 +129,11 @@ class SpannerDBImplTest {
                                 ColumnDefinition.Int64("userRegId", true),
                                 ColumnDefinition.Timestamp("timestamp", true),
                                 ColumnDefinition.String("status", true),
-                                ColumnDefinition.String("newData")
+                                ColumnDefinition.String("newData"),
+                                ColumnDefinition.Bool("isDeleted", true)
                         ),
                         primaryKeys = listOf(
+                                PrimaryKeyDefinition("isDeleted"),
                                 PrimaryKeyDefinition("userRegId"),
                                 PrimaryKeyDefinition("timestamp", "DESC")
                         )
@@ -139,27 +141,32 @@ class SpannerDBImplTest {
                 MigrationUp.AddColumns(
                         name = "Status",
                         columns = listOf(
-                                ColumnDefinition.Int64("likesCount")
+                                ColumnDefinition.Int64("likesCount"),
+                                ColumnDefinition.Bool("isUpdated")
                         )
                 )
         ), version = 1L))
 
         val expectedCreateDDL = """
                 CREATE TABLE Status (
-                    userRegId Int64 NOT NULL,timestamp Timestamp NOT NULL,status String(MAX) NOT NULL,newData String(MAX)
+                    userRegId Int64 NOT NULL,timestamp Timestamp NOT NULL,status String(MAX) NOT NULL,newData String(MAX),isDeleted Bool NOT NULL
                 ) PRIMARY KEY (
-                    userRegId ,timestamp DESC
+                    isDeleted ,userRegId ,timestamp DESC
                 )
             """.trimIndent()
 
-        val expectedAlterDDL = """
+        val expectedAlterDDLOne = """
                 ALTER TABLE Status ADD COLUMN likesCount Int64
+            """.trimIndent()
+
+        val expectedAlterDDLTwo = """
+                ALTER TABLE Status ADD COLUMN isUpdated Bool
             """.trimIndent()
 
         spannerDbImpl.migrate(migrations)
 
         Mockito.verify(dbAdminClient).updateDatabaseDdl(settings.instanceId, settings.projectId, listOf(expectedCreateDDL), null)
-        Mockito.verify(dbAdminClient).updateDatabaseDdl(settings.instanceId, settings.projectId, listOf(expectedAlterDDL), null)
+        Mockito.verify(dbAdminClient).updateDatabaseDdl(settings.instanceId, settings.projectId, listOf(expectedAlterDDLOne, expectedAlterDDLTwo), null)
         Mockito.verify(dbClient).write(ArgumentMatchers.anyList())
     }
 }

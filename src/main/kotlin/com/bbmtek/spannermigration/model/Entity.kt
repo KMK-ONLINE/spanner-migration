@@ -53,7 +53,8 @@ sealed class MigrationUp {
 @JsonSubTypes(*arrayOf(
         JsonSubTypes.Type(value = ColumnDefinition.Int64::class, name = "Int64"),
         JsonSubTypes.Type(value = ColumnDefinition.Timestamp::class, name = "Timestamp"),
-        JsonSubTypes.Type(value = ColumnDefinition.String::class, name = "String")
+        JsonSubTypes.Type(value = ColumnDefinition.String::class, name = "String"),
+        JsonSubTypes.Type(value = ColumnDefinition.Bool::class, name = "Bool")
 ))
 sealed class ColumnDefinition {
     abstract var name: kotlin.String
@@ -76,6 +77,11 @@ sealed class ColumnDefinition {
     }
 
     data class Timestamp(
+            override var name: kotlin.String = "",
+            override var required: Boolean = false
+    ) : ColumnDefinition()
+
+    data class Bool(
             override var name: kotlin.String = "",
             override var required: Boolean = false
     ) : ColumnDefinition()

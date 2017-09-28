@@ -26,6 +26,9 @@ up:
        - type: String
          name: newData
          maxLength: 160
+       - type: Bool
+         name: isDeleted
+         required: true
   - type: AddColumns
     name: Status
     columns:
