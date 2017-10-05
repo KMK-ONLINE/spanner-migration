@@ -13,7 +13,7 @@ class Settings {
     lateinit var migrationDir: String
 
     @Parameter(names = arrayOf("--project-id", "-p"), required = true, description = "Google Cloud Project ID")
-    lateinit var projectId:String
+    lateinit var projectId: String
 
     @Parameter(names = arrayOf("--instance-id", "-i"), required = true, description = "Spanner Instance ID")
     lateinit var instanceId: String

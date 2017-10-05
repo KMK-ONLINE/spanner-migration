@@ -12,7 +12,7 @@ class YamlParserTest {
     @Test
     fun `convertYamlToObject`() {
         val mapper = ObjectMapper(YAMLFactory())
-        val stringYaml ="""
+        val stringYaml = """
 up:
   - type: CreateTable
     name: Status

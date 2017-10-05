@@ -17,7 +17,7 @@ class SpannerMigrationApplicationTest {
     lateinit var dbAdminClient: DatabaseAdminClient
     lateinit var spannerMigrationApplication: SpannerMigrationApplication
 
-    private var migrationDir = "/home/woi/Workspace/spanner-migration/examples/migrate"
+    private var migrationDir = "/home/titopandub/Workspace/spanner-migration/examples/migrate"
     private var projectId = "bbm-dev"
     private var instanceId = "test-migration"
     private val databaseId = "migration"
@@ -31,12 +31,12 @@ class SpannerMigrationApplicationTest {
 
     @Before
     fun setup() {
-        val options = SpannerOptions.newBuilder().build()
+        val options = SpannerOptions.newBuilder().setProjectId(projectId).build()
         spanner = options.service
         dbClient = spanner.getDatabaseClient(DatabaseId.of(options.projectId, instanceId, databaseId))
         dbAdminClient = spanner.databaseAdminClient
 
-        if(checkTableExists(dbClient, schemaMigrationTableName)) {
+        if (checkTableExists(dbClient, schemaMigrationTableName)) {
             val operation = dbAdminClient.updateDatabaseDdl(instanceId, databaseId, listOf("DROP TABLE $schemaMigrationTableName"), null)
             operation.waitFor(WaitForOption.checkEvery(1L, TimeUnit.SECONDS))
         }
@@ -110,10 +110,10 @@ class SpannerMigrationApplicationTest {
         }
     }
 
-    private fun  checkVersionHaveRow(dbClient: DatabaseClient): Boolean {
+    private fun checkVersionHaveRow(dbClient: DatabaseClient): Boolean {
         return try {
             val resultSet = dbClient.singleUse().executeQuery(Statement.of("SELECT COUNT(1) FROM $schemaMigrationTableName"))
-            if(resultSet.next()) {
+            if (resultSet.next()) {
                 resultSet.getLong(0) > 0
             } else {
                 false

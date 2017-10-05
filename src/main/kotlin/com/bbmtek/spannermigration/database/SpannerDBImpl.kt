@@ -10,7 +10,7 @@ import java.util.concurrent.TimeUnit
 
 class SpannerDBImpl(private val databaseAdminClient: DatabaseAdminClient,
                     private val databaseClient: DatabaseClient,
-                    private val settings: Settings): SpannerDB {
+                    private val settings: Settings) : SpannerDB {
     private val schemaMigrationTableName = "SchemaMigrations"
 
     override fun createSchemaMigrationsTable() {
@@ -29,28 +29,37 @@ class SpannerDBImpl(private val databaseAdminClient: DatabaseAdminClient,
     }
 
     override fun isTableExists(tableName: String): Boolean {
+        val resultSet = databaseClient.singleUse().executeQuery(Statement.of("SELECT 1 FROM $tableName"))
         return try {
-            databaseClient.singleUse().executeQuery(Statement.of("SELECT 1 FROM $tableName")).next()
+            resultSet.next()
             true
         } catch (e: SpannerException) {
             false
+        } finally {
+            resultSet.close()
         }
     }
 
     override fun getLastMigratedVersion(): Long {
         val resultSet = databaseClient.singleUse().executeQuery(
                 Statement.of("SELECT version FROM $schemaMigrationTableName ORDER BY version DESC LIMIT 1"))
-        return if (resultSet.next()) {
-            resultSet.getLong(0)
-        } else {
+        return try {
+            if (resultSet.next()) {
+                resultSet.getLong(0)
+            } else {
+                -1L
+            }
+        } catch (e: SpannerException) {
             -1L
+        } finally {
+            resultSet.close()
         }
     }
 
     override fun migrate(migrations: List<Migrations>) {
         migrations.forEach {
             it.up.forEach {
-                when(it) {
+                when (it) {
                     is MigrationUp.CreateTable -> {
                         val migrationDdl = """
                             CREATE TABLE ${it.name} (
@@ -69,7 +78,7 @@ class SpannerDBImpl(private val databaseAdminClient: DatabaseAdminClient,
                         val tableName = it.name
 
                         val migrationDDLs = it.columns.map {
-                            val columnDefinition = when(it) {
+                            val columnDefinition = when (it) {
                                 is ColumnDefinition.String -> {
                                     "${it.name} ${it.dataType()}(${it.maxLengthString()}) ${it.requiredString()}".removeSuffix(" ")
                                 }

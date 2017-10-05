@@ -18,7 +18,8 @@ class SpannerMigrationApplication {
     private val migrationLoader = MigrationLoader()
 
     companion object {
-        @JvmStatic fun main(vararg argv: String) {
+        @JvmStatic
+        fun main(vararg argv: String) {
             val spannerMigration = SpannerMigrationApplication()
             spannerMigration.run(argv)
             spannerMigration.closeDb()

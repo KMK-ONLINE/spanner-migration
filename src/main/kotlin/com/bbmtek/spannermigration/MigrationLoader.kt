@@ -12,7 +12,7 @@ class MigrationLoader {
     fun loadMigrations(migrationDir: String, lastVersion: Long): List<Migrations> {
         val migrationFiles = File(migrationDir).listFiles().sortedBy { it.name }
         val migrations = arrayListOf<Migrations>()
-        val filteredFiles =  migrationFiles.filter {
+        val filteredFiles = migrationFiles.filter {
             it.nameWithoutExtension.split("_")[0].toLong() > lastVersion
         }
 

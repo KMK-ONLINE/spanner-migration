@@ -9,10 +9,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo
 data class Migrations(val up: List<MigrationUp> = listOf(), val version: Long = 0)
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type")
-@JsonSubTypes(*arrayOf(
-        JsonSubTypes.Type(value = MigrationUp.CreateTable::class, name = "CreateTable"),
-        JsonSubTypes.Type(value = MigrationUp.AddColumns::class, name = "AddColumns")
-))
+@JsonSubTypes(JsonSubTypes.Type(value = MigrationUp.CreateTable::class, name = "CreateTable"), JsonSubTypes.Type(value = MigrationUp.AddColumns::class, name = "AddColumns"))
 sealed class MigrationUp {
     abstract var name: kotlin.String
     abstract var columns: List<ColumnDefinition>
@@ -25,7 +22,7 @@ sealed class MigrationUp {
         fun columnsToSqlString(): kotlin.String {
             return this.columns
                     .map {
-                        when(it) {
+                        when (it) {
                             is ColumnDefinition.String -> {
                                 "${it.name} ${it.dataType()}(${it.maxLengthString()}) ${it.requiredString()}".removeSuffix(" ")
                             }
@@ -49,13 +46,8 @@ sealed class MigrationUp {
 
 }
 
-@JsonTypeInfo(use=JsonTypeInfo.Id.NAME, include=JsonTypeInfo.As.PROPERTY, property="type")
-@JsonSubTypes(*arrayOf(
-        JsonSubTypes.Type(value = ColumnDefinition.Int64::class, name = "Int64"),
-        JsonSubTypes.Type(value = ColumnDefinition.Timestamp::class, name = "Timestamp"),
-        JsonSubTypes.Type(value = ColumnDefinition.String::class, name = "String"),
-        JsonSubTypes.Type(value = ColumnDefinition.Bool::class, name = "Bool")
-))
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type")
+@JsonSubTypes(JsonSubTypes.Type(value = ColumnDefinition.Int64::class, name = "Int64"), JsonSubTypes.Type(value = ColumnDefinition.Timestamp::class, name = "Timestamp"), JsonSubTypes.Type(value = ColumnDefinition.String::class, name = "String"), JsonSubTypes.Type(value = ColumnDefinition.Bool::class, name = "Bool"))
 sealed class ColumnDefinition {
     abstract var name: kotlin.String
     abstract var required: Boolean
@@ -70,7 +62,7 @@ sealed class ColumnDefinition {
             override var required: Boolean = false,
             var maxLength: Int? = null
     ) : ColumnDefinition() {
-        fun maxLengthString(): kotlin.String = when(maxLength) {
+        fun maxLengthString(): kotlin.String = when (maxLength) {
             is Int -> maxLength.toString()
             else -> "MAX"
         }
@@ -91,7 +83,7 @@ sealed class ColumnDefinition {
     }
 
     fun requiredString(): kotlin.String {
-        return if(required) {
+        return if (required) {
             "NOT NULL"
         } else {
             ""
