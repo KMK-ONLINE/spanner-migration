@@ -44,7 +44,7 @@ class SpannerMigrationApplication {
         )
 
         spannerDb.createSchemaMigrationsTable()
-        spannerDb.getLastMigratedVersion()
+        spannerDb.getMigratedVersions()
                 .let { migrationLoader.loadMigrations(settings.migrationDir, it) }
                 .let { spannerDb.migrate(it) }
     }

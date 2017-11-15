@@ -17,9 +17,9 @@ class SpannerMigrationApplicationTest {
     lateinit var dbAdminClient: DatabaseAdminClient
     lateinit var spannerMigrationApplication: SpannerMigrationApplication
 
-    private var migrationDir = "/home/titopandub/Workspace/spanner-migration/examples/migrate"
+    private var migrationDir = "${System.getProperty("user.dir")}/examples/migrate"
     private var projectId = "bbm-dev"
-    private var instanceId = "test-migration"
+    private var instanceId = "bbm-spanner"
     private val databaseId = "migration"
     private val schemaMigrationTableName = "SchemaMigrations"
 
