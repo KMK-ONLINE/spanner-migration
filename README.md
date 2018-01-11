@@ -60,7 +60,7 @@ You can see some example files in `example` folder.
 To run it
 
 ```bash
-java -jar build/libs/spanner-migration-0.0.1-SNAPSHOT.jar \
+java -jar {spanner migration binary} \
 --migration-dir ~/Workspace/spanner-migration/examples/migrate \
 --project-id your-project \
 --instance-id your-instance \
