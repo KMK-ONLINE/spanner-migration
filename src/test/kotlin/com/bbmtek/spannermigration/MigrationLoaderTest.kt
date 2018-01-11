@@ -31,7 +31,7 @@ class MigrationLoaderTest {
         val migrations = migrationLoader.loadMigrations(migrationsDir, listOf())
 
         Assert.assertEquals(20170725170000L, migrations.first().version)
-        Assert.assertEquals(20170828130000L, migrations.last().version)
+        Assert.assertEquals(20180103170100L, migrations.last().version)
     }
 
     @Test

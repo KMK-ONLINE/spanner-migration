@@ -6,19 +6,20 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo
 /**
  * Created by woi on 11/08/17.
  */
-data class Migrations(val up: List<MigrationUp> = listOf(), val version: Long = 0)
+data class Migrations(val up: List<Migration> = listOf(), val version: Long = 0)
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type")
-@JsonSubTypes(JsonSubTypes.Type(value = MigrationUp.CreateTable::class, name = "CreateTable"), JsonSubTypes.Type(value = MigrationUp.AddColumns::class, name = "AddColumns"))
-sealed class MigrationUp {
-    abstract var name: kotlin.String
-    abstract var columns: List<ColumnDefinition>
-
+@JsonSubTypes(
+        JsonSubTypes.Type(value = Migration.CreateTable::class, name = "CreateTable"),
+        JsonSubTypes.Type(value = Migration.AddColumns::class, name = "AddColumns"),
+        JsonSubTypes.Type(value = Migration.CreateIndex::class, name = "CreateIndex")
+)
+sealed class Migration {
     data class CreateTable(
-            override var name: kotlin.String = "",
-            override var columns: List<ColumnDefinition> = listOf(),
+            var tableName: kotlin.String = "",
+            var columns: List<ColumnDefinition> = listOf(),
             var primaryKeys: List<PrimaryKeyDefinition> = listOf()
-    ) : MigrationUp() {
+    ) : Migration() {
         fun columnsToSqlString(): kotlin.String {
             return this.columns
                     .map {
@@ -40,10 +41,24 @@ sealed class MigrationUp {
     }
 
     data class AddColumns(
-            override var name: kotlin.String = "",
-            override var columns: List<ColumnDefinition> = listOf()
-    ) : MigrationUp()
+            var tableName: kotlin.String = "",
+            var columns: List<ColumnDefinition> = listOf()
+    ) : Migration()
 
+    data class CreateIndex(
+            var indexName: kotlin.String = "",
+            var tableName: kotlin.String = "",
+            var indexColumns: List<IndexKeyDefinition> = listOf(),
+            var storedColumns: List<String> = listOf()
+    ): Migration() {
+        fun indexColumnsToSqlString(): kotlin.String {
+            return this.indexColumns.joinToString(",") { "${it.name} ${it.order}" }
+        }
+
+        fun storedColumnsToSqlString(): kotlin.String {
+            return this.storedColumns.joinToString(",")
+        }
+    }
 }
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type")
@@ -92,6 +107,11 @@ sealed class ColumnDefinition {
 }
 
 data class PrimaryKeyDefinition(
+        var name: kotlin.String = "",
+        var order: kotlin.String = ""
+)
+
+data class IndexKeyDefinition(
         var name: kotlin.String = "",
         var order: kotlin.String = ""
 )

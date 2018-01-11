@@ -1,6 +1,6 @@
 up:
   - type: CreateTable
-    name: Status
+    tableName: Status
     columns:
       - type: Int64
         name: userRegId

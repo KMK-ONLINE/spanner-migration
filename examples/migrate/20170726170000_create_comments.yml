@@ -1,6 +1,6 @@
 up:
   - type: CreateTable
-    name: Comments
+    tableName: Comments
     columns:
       - type: String
         name: statusUuid

@@ -8,32 +8,31 @@ import org.junit.Test
  * Created by woi on 11/08/17.
  */
 class YamlParserTest {
-
     @Test
     fun `convertYamlToObject`() {
         val mapper = ObjectMapper(YAMLFactory())
         val stringYaml = """
 up:
   - type: CreateTable
-    name: Status
+    tableName: Status
     columns:
        - type: Int64
-         name: userRegId
+         tableName: userRegId
          required: true
        - type: Timestamp
-         name: createdAt
+         tableName: createdAt
          required: true
        - type: String
-         name: newData
+         tableName: newData
          maxLength: 160
        - type: Bool
-         name: isDeleted
+         tableName: isDeleted
          required: true
   - type: AddColumns
-    name: Status
+    tableName: Status
     columns:
       - type: Int64
-        name: likesCount
+        tableName: likesCount
                         """
         val migrations = mapper.readValue(stringYaml, Migrations::class.java)
         println(migrations.toString())

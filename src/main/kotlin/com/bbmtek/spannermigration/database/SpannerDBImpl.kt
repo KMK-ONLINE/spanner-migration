@@ -2,7 +2,7 @@ package com.bbmtek.spannermigration.database
 
 import com.bbmtek.spannermigration.Settings
 import com.bbmtek.spannermigration.model.ColumnDefinition
-import com.bbmtek.spannermigration.model.MigrationUp
+import com.bbmtek.spannermigration.model.Migration
 import com.bbmtek.spannermigration.model.Migrations
 import com.google.cloud.WaitForOption
 import com.google.cloud.spanner.*
@@ -60,9 +60,9 @@ class SpannerDBImpl(private val databaseAdminClient: DatabaseAdminClient,
         migrations.forEach {
             it.up.forEach {
                 when (it) {
-                    is MigrationUp.CreateTable -> {
+                    is Migration.CreateTable -> {
                         val migrationDdl = """
-                            CREATE TABLE ${it.name} (
+                            CREATE TABLE ${it.tableName} (
                                 ${it.columnsToSqlString()}
                             ) PRIMARY KEY (
                                 ${it.primaryKeysToSqlString()}
@@ -72,10 +72,10 @@ class SpannerDBImpl(private val databaseAdminClient: DatabaseAdminClient,
                                 .waitFor(WaitForOption.checkEvery(1L, TimeUnit.SECONDS))
                                 .result
 
-                        println("${it.name} table created.")
+                        println("${it.tableName} table created.")
                     }
-                    is MigrationUp.AddColumns -> {
-                        val tableName = it.name
+                    is Migration.AddColumns -> {
+                        val tableName = it.tableName
 
                         val migrationDDLs = it.columns.map {
                             val columnDefinition = when (it) {
@@ -97,6 +97,28 @@ class SpannerDBImpl(private val databaseAdminClient: DatabaseAdminClient,
                                 .result
 
                         println("Columns ${it.columns.joinToString(",") { it.name }} added to $tableName.")
+                    }
+                    is Migration.CreateIndex -> {
+                        val indexDDL = """
+                            CREATE INDEX ${it.indexName} ON ${it.tableName} (
+                                ${it.indexColumnsToSqlString()}
+                            )
+                        """.trimIndent()
+
+                        if (it.storedColumns.isNotEmpty()) {
+                            indexDDL +
+                            """
+                                STORING (
+                                    ${it.storedColumnsToSqlString()}
+                                )
+                            """.trimIndent()
+                        }
+
+                        databaseAdminClient.updateDatabaseDdl(settings.instanceId, settings.databaseId, listOf(indexDDL), null)
+                                .waitFor(WaitForOption.checkEvery(1L, TimeUnit.SECONDS))
+                                .result
+
+                        println("Index ${it.indexName} on ${it.tableName} created.")
                     }
                 }
             }

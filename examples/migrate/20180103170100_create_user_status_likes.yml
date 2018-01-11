@@ -1,0 +1,44 @@
+up:
+  - type: CreateTable
+    tableName: UserStatusLikes
+    columns:
+      - type: String
+        name: hashedUserRegId
+        required: true
+        maxLength: 32
+      - type: String
+        name: statusUserRegId
+        required: true
+        maxLength: 32
+      - type: Int64
+        name: userRegId
+        required: true
+      - type: Timestamp
+        name: statusTimestamp
+        required: true
+      - type: String
+        name: statusUuid
+        required: true
+        maxLength: 64
+      - type: Timestamp
+        name: likeTimestamp
+        required: true
+    primaryKeys:
+      - name: hashedUserRegId
+      - name: statusUserRegId
+      - name: statusTimestamp
+        order: desc
+      - name: statusUuid
+  - type: CreateIndex
+    indexName: IDX_UserStatusLikes_statusUserRegId_statusTimestampDesc_statusUuid
+    tableName: UserStatusLikes
+    indexColumns:
+      - name: statusUserRegId
+      - name: statusTimestamp
+        order: desc
+      - name: statusUuid
+    storedColumns:
+      - userRegId
+
+
+

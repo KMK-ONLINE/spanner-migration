@@ -52,6 +52,10 @@ class SpannerMigrationApplicationTest {
         operation2.waitFor(WaitForOption.checkEvery(1L, TimeUnit.SECONDS))
         val operation3 = dbAdminClient.updateDatabaseDdl(instanceId, databaseId, listOf("DROP TABLE Comments"), null)
         operation3.waitFor(WaitForOption.checkEvery(1L, TimeUnit.SECONDS))
+        val operation4 = dbAdminClient.updateDatabaseDdl(instanceId, databaseId, listOf("DROP INDEX IDX_UserStatusLikes_statusUserRegId_statusTimestampDesc_statusUuid"), null)
+        operation4.waitFor(WaitForOption.checkEvery(1L, TimeUnit.SECONDS))
+        val operation5 = dbAdminClient.updateDatabaseDdl(instanceId, databaseId, listOf("DROP TABLE UserStatusLikes"), null)
+        operation5.waitFor(WaitForOption.checkEvery(1L, TimeUnit.SECONDS))
     }
 
     @Test
@@ -63,6 +67,7 @@ class SpannerMigrationApplicationTest {
         assert(checkTableExists(dbClient, "Status"))
         assert(checkTableExists(dbClient, "Comments"))
         assert(checkColumnsExists(dbClient, "Status", arrayOf("likesCount")))
+        assert(checkIndexExists(dbClient, "UserStatusLikes", "IDX_UserStatusLikes_statusUserRegId_statusTimestampDesc_statusUuid"))
     }
 
     @Test
@@ -95,6 +100,15 @@ class SpannerMigrationApplicationTest {
     private fun checkTableExists(dbClient: DatabaseClient, tableName: String): Boolean {
         return try {
             dbClient.singleUse().executeQuery(Statement.of("SELECT 1 FROM $tableName")).next()
+            true
+        } catch (e: SpannerException) {
+            false
+        }
+    }
+
+    private fun checkIndexExists(dbClient: DatabaseClient, tableName: String, indexName: String): Boolean {
+        return try {
+            dbClient.singleUse().executeQuery(Statement.of("SELECT 1 FROM $tableName@{FORCE_INDEX=$indexName}")).next()
             true
         } catch (e: SpannerException) {
             false

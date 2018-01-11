@@ -2,7 +2,7 @@ package com.bbmtek.spannermigration.database
 
 import com.bbmtek.spannermigration.Settings
 import com.bbmtek.spannermigration.model.ColumnDefinition
-import com.bbmtek.spannermigration.model.MigrationUp
+import com.bbmtek.spannermigration.model.Migration
 import com.bbmtek.spannermigration.model.Migrations
 import com.bbmtek.spannermigration.model.PrimaryKeyDefinition
 import com.google.cloud.WaitForOption
@@ -125,8 +125,8 @@ class SpannerDBImplTest {
         `when`(mockOperation.isSuccessful).thenReturn(true)
 
         val migrations = listOf<Migrations>(Migrations(up = listOf(
-                MigrationUp.CreateTable(
-                        name = "Status",
+                Migration.CreateTable(
+                        tableName = "Status",
                         columns = listOf(
                                 ColumnDefinition.Int64("userRegId", true),
                                 ColumnDefinition.Timestamp("timestamp", true),
@@ -140,8 +140,8 @@ class SpannerDBImplTest {
                                 PrimaryKeyDefinition("timestamp", "DESC")
                         )
                 ),
-                MigrationUp.AddColumns(
-                        name = "Status",
+                Migration.AddColumns(
+                        tableName = "Status",
                         columns = listOf(
                                 ColumnDefinition.Int64("likesCount"),
                                 ColumnDefinition.Bool("isUpdated")
