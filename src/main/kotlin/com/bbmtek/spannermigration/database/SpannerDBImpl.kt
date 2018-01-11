@@ -40,17 +40,17 @@ class SpannerDBImpl(private val databaseAdminClient: DatabaseAdminClient,
         }
     }
 
-    override fun getLastMigratedVersion(): Long {
+    override fun getMigratedVersions(): List<Long> {
         val resultSet = databaseClient.singleUse().executeQuery(
-                Statement.of("SELECT version FROM $schemaMigrationTableName ORDER BY version DESC LIMIT 1"))
+                Statement.of("SELECT version FROM $schemaMigrationTableName ORDER BY version DESC"))
         return try {
-            if (resultSet.next()) {
-                resultSet.getLong(0)
-            } else {
-                -1L
+            val returnList = arrayListOf<Long>()
+            while (resultSet.next()){
+                returnList.add(resultSet.getLong(0))
             }
+            returnList
         } catch (e: SpannerException) {
-            -1L
+            listOf<Long>()
         } finally {
             resultSet.close()
         }

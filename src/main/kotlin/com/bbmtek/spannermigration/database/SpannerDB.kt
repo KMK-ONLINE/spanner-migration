@@ -8,6 +8,6 @@ import com.bbmtek.spannermigration.model.Migrations
 interface SpannerDB {
     fun createSchemaMigrationsTable(): Unit
     fun isTableExists(tableName: String): Boolean
-    fun getLastMigratedVersion(): Long
     fun migrate(migrations: List<Migrations>)
+    fun getMigratedVersions(): List<Long>
 }

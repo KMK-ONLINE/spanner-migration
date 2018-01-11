@@ -8,6 +8,7 @@ import com.bbmtek.spannermigration.model.PrimaryKeyDefinition
 import com.google.cloud.WaitForOption
 import com.google.cloud.spanner.*
 import com.google.spanner.admin.database.v1.UpdateDatabaseDdlMetadata
+import org.hamcrest.Matchers
 import org.junit.Assert
 import org.junit.Before
 import org.junit.Test
@@ -66,23 +67,24 @@ class SpannerDBImplTest {
         Assert.assertEquals(false, isTableExists)
     }
 
+
     @Test
-    fun `getLastMigratedVersion should return 20170725170000 when have migration on SchemaMigrations`() {
+    fun `getMigratedVersions should return 20170725170000 when have migration on SchemaMigrations`() {
         `when`(mockReadContext.executeQuery(any())).thenReturn(mockResultSet)
         `when`(mockResultSet.next()).thenReturn(true, false)
         `when`(mockResultSet.getLong(0)).thenReturn(20170725170000L)
 
-        val lastMigratedVersion = spannerDbImpl.getLastMigratedVersion()
-        Assert.assertEquals(20170725170000L, lastMigratedVersion)
+        val migratedVersions = spannerDbImpl.getMigratedVersions()
+        Assert.assertThat(migratedVersions, Matchers.`is`(Matchers.equalTo(listOf(20170725170000L))))
     }
 
     @Test
-    fun `getLastMigratedVersion should return -1 when no migration on SchemaMigrations`() {
+    fun `getMigratedVersions should return -1 when no migration on SchemaMigrations`() {
         `when`(mockReadContext.executeQuery(any())).thenReturn(mockResultSet)
         `when`(mockResultSet.next()).thenReturn(false)
 
-        val lastMigratedVersion = spannerDbImpl.getLastMigratedVersion()
-        Assert.assertEquals(-1L, lastMigratedVersion)
+        val migratedVersions = spannerDbImpl.getMigratedVersions()
+        Assert.assertThat(migratedVersions, Matchers.`is`(Matchers.equalTo(listOf<Long>())))
     }
 
     @Test
