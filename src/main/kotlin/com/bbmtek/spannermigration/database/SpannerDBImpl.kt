@@ -99,20 +99,26 @@ class SpannerDBImpl(private val databaseAdminClient: DatabaseAdminClient,
                         println("Columns ${it.columns.joinToString(",") { it.name }} added to $tableName.")
                     }
                     is Migration.CreateIndex -> {
-                        val indexDDL = """
+                        val createIndex = """
                             CREATE INDEX ${it.indexName} ON ${it.tableName} (
                                 ${it.indexColumnsToSqlString()}
                             )
-                        """.trimIndent()
-
-                        if (it.storedColumns.isNotEmpty()) {
-                            indexDDL +
+                        """
+                        val storedColumns = if (it.storedColumns.isNotEmpty()) {
                             """
                                 STORING (
                                     ${it.storedColumnsToSqlString()}
                                 )
-                            """.trimIndent()
+                            """
+                        } else {
+                            ""
                         }
+
+                        val indexDDL = """
+                            $createIndex
+                            $storedColumns
+                        """.trimIndent()
+
 
                         databaseAdminClient.updateDatabaseDdl(settings.instanceId, settings.databaseId, listOf(indexDDL), null)
                                 .waitFor(WaitForOption.checkEvery(1L, TimeUnit.SECONDS))

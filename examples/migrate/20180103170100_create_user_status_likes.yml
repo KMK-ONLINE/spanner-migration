@@ -39,6 +39,3 @@ up:
       - name: statusUuid
     storedColumns:
       - userRegId
-
-
-

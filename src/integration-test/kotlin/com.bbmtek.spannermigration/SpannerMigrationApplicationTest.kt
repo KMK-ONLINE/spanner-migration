@@ -12,30 +12,29 @@ import java.util.concurrent.TimeUnit
  * Created by woi on 10/08/17.
  */
 class SpannerMigrationApplicationTest {
-    lateinit var spanner: Spanner
-    lateinit var dbClient: DatabaseClient
-    lateinit var dbAdminClient: DatabaseAdminClient
+    companion object {
+        private val migrationDir = "${System.getProperty("user.dir")}/examples/migrate"
+        private val projectId = "bbm-dev"
+        private val instanceId = "bbm-spanner"
+        private val databaseId = "migration"
+        private val schemaMigrationTableName = "SchemaMigrations"
+
+        private val argv = arrayOf(
+                "--migration-dir", migrationDir,
+                "--project-id", projectId,
+                "--instance-id", instanceId,
+                "--database-id", databaseId)
+    }
+
+    private val spannerOption = SpannerOptions.newBuilder().setProjectId(projectId).build()
+    private val spanner: Spanner = spannerOption.service
+    private val dbClient: DatabaseClient = spanner.getDatabaseClient(DatabaseId.of(spannerOption.projectId, instanceId, databaseId))
+    private val dbAdminClient: DatabaseAdminClient = spanner.databaseAdminClient
+
     lateinit var spannerMigrationApplication: SpannerMigrationApplication
-
-    private var migrationDir = "${System.getProperty("user.dir")}/examples/migrate"
-    private var projectId = "bbm-dev"
-    private var instanceId = "bbm-spanner"
-    private val databaseId = "migration"
-    private val schemaMigrationTableName = "SchemaMigrations"
-
-    private val argv = arrayOf(
-            "--migration-dir", migrationDir,
-            "--project-id", projectId,
-            "--instance-id", instanceId,
-            "--database-id", databaseId)
 
     @Before
     fun setup() {
-        val options = SpannerOptions.newBuilder().setProjectId(projectId).build()
-        spanner = options.service
-        dbClient = spanner.getDatabaseClient(DatabaseId.of(options.projectId, instanceId, databaseId))
-        dbAdminClient = spanner.databaseAdminClient
-
         if (checkTableExists(dbClient, schemaMigrationTableName)) {
             val operation = dbAdminClient.updateDatabaseDdl(instanceId, databaseId, listOf("DROP TABLE $schemaMigrationTableName"), null)
             operation.waitFor(WaitForOption.checkEvery(1L, TimeUnit.SECONDS))

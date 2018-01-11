@@ -26,7 +26,6 @@ class MigrationLoaderTest {
     fun `should load migration files in correct order`() {
         val migrationsDir = "${System.getProperty("user.dir")}/examples/migrate"
         println("Loaded directory : $migrationsDir")
-        val lastVersion = -1L
 
         val migrations = migrationLoader.loadMigrations(migrationsDir, listOf())
 
@@ -38,20 +37,18 @@ class MigrationLoaderTest {
     fun `doesn't have any migration`() {
         val migrationsDir = "${System.getProperty("user.dir")}/examples/migrate"
         println("Loaded directory : $migrationsDir")
-        val lastVersion = -1L
 
         val migrations = migrationLoader.loadMigrations(migrationsDir, listOf())
         val migrationVersions = migrations.map { it.version }
-        Assert.assertThat(migrationVersions, `is`(equalTo(Arrays.asList(20170725170000L,20170726170000L,20170828130000L))))
+        Assert.assertThat(migrationVersions, `is`(equalTo(Arrays.asList(20170725170000L,20170726170000L,20170828130000L,20180103170100L))))
     }
 
     @Test
     fun `already at latest version`() {
         val migrationsDir = "${System.getProperty("user.dir")}/examples/migrate"
         println("Loaded directory : $migrationsDir")
-        val lastVersion = -1L
 
-        val migrations = migrationLoader.loadMigrations(migrationsDir, listOf(20170725170000L,20170726170000L,20170828130000L))
+        val migrations = migrationLoader.loadMigrations(migrationsDir, listOf(20170725170000L,20170726170000L,20170828130000L,20180103170100L))
         val migrationVersions = migrations.map { it.version }
         Assert.assertEquals(listOf<Long>(), migrationVersions)
     }
@@ -60,10 +57,9 @@ class MigrationLoaderTest {
     fun `still have pending migration at middle`() {
         val migrationsDir = "${System.getProperty("user.dir")}/examples/migrate"
         println("Loaded directory : $migrationsDir")
-        val lastVersion = -1L
 
         val migrations = migrationLoader.loadMigrations(migrationsDir, listOf(20170725170000L,20170828130000L))
         val migrationVersions = migrations.map { it.version }
-        Assert.assertEquals(listOf<Long>(20170726170000L), migrationVersions)
+        Assert.assertEquals(listOf(20170726170000L,20180103170100L), migrationVersions)
     }
 }

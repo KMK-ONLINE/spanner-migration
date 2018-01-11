@@ -17,24 +17,23 @@ up:
     tableName: Status
     columns:
        - type: Int64
-         tableName: userRegId
+         name: userRegId
          required: true
        - type: Timestamp
-         tableName: createdAt
+         name: createdAt
          required: true
        - type: String
-         tableName: newData
+         name: newData
          maxLength: 160
        - type: Bool
-         tableName: isDeleted
+         name: isDeleted
          required: true
   - type: AddColumns
     tableName: Status
     columns:
       - type: Int64
-        tableName: likesCount
+        name: likesCount
                         """
-        val migrations = mapper.readValue(stringYaml, Migrations::class.java)
-        println(migrations.toString())
+        mapper.readValue(stringYaml, Migrations::class.java)
     }
 }
