@@ -46,6 +46,9 @@ CreateIndex
   - type: CreateIndex
     indexName: [Index Name]
     tableName: [Table Name]
+    indexOptions:
+    - UNIQUE
+    - NULL_FILTERED
     indexColumns:
       - name: [Column Name]
         order: [Order: desc | asc]
