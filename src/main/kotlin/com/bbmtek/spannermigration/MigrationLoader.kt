@@ -9,11 +9,11 @@ import java.io.File
  * Created by woi on 04/09/17.
  */
 class MigrationLoader {
-    fun loadMigrations(migrationDir: String, versions: List<Long>): List<Migrations> {
+    fun loadMigrations(migrationDir: String, migratedVersions: List<Long>): List<Migrations> {
         val migrationFiles = File(migrationDir).listFiles().sortedBy { it.name }
 
         val filteredFiles = migrationFiles.filter {
-            !versions.contains(it.nameWithoutExtension.split("_")[0].toLong())
+            !migratedVersions.contains(it.nameWithoutExtension.split("_")[0].toLong())
         }
 
         val objectMapper = ObjectMapper(YAMLFactory())

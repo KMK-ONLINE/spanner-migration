@@ -99,8 +99,11 @@ class SpannerDBImpl(private val databaseAdminClient: DatabaseAdminClient,
                         println("Columns ${it.columns.joinToString(",") { it.name }} added to $tableName.")
                     }
                     is Migration.CreateIndex -> {
+
+                        val indexOptions = it.indexOptions.joinToString(" ")
+
                         val createIndex = """
-                            CREATE INDEX ${it.indexName} ON ${it.tableName} (
+                            CREATE $indexOptions INDEX ${it.indexName} ON ${it.tableName} (
                                 ${it.indexColumnsToSqlString()}
                             )
                         """

@@ -1,0 +1,19 @@
+up:
+  - type: CreateTable
+    tableName: TableWithNullFilteredIndex
+    columns:
+      - type: Int64
+        name: primaryKey
+        required: true
+      - type: Int64
+        name: nullableColumn
+        required: false
+    primaryKeys:
+      - name: primaryKey
+  - type: CreateIndex
+    indexName: NULL_FILTERED_INDEX
+    tableName: TableWithNullFilteredIndex
+    indexOptions:
+      - NULL_FILTERED
+    indexColumns:
+      - name: nullableColumn

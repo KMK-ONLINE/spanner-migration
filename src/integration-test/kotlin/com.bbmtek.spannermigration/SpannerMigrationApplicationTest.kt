@@ -2,7 +2,11 @@ package com.bbmtek.spannermigration
 
 import com.google.cloud.WaitForOption
 import com.google.cloud.spanner.*
+import junit.framework.Assert.assertTrue
+import org.hamcrest.Matchers
+import org.hamcrest.Matchers.contains
 import org.junit.After
+import org.junit.Assert.assertThat
 import org.junit.Before
 import org.junit.Test
 import java.util.concurrent.TimeUnit
@@ -55,11 +59,21 @@ class SpannerMigrationApplicationTest {
         operation4.waitFor(WaitForOption.checkEvery(1L, TimeUnit.SECONDS))
         val operation5 = dbAdminClient.updateDatabaseDdl(instanceId, databaseId, listOf("DROP TABLE UserStatusLikes"), null)
         operation5.waitFor(WaitForOption.checkEvery(1L, TimeUnit.SECONDS))
+        val operation6 = dbAdminClient.updateDatabaseDdl(instanceId, databaseId, listOf("DROP INDEX NULL_FILTERED_INDEX"), null)
+        operation6.waitFor(WaitForOption.checkEvery(1L, TimeUnit.SECONDS))
+        val operation7 = dbAdminClient.updateDatabaseDdl(instanceId, databaseId, listOf("DROP TABLE TableWithNullFilteredIndex"), null)
+        operation7.waitFor(WaitForOption.checkEvery(1L, TimeUnit.SECONDS))
     }
 
     @Test
     fun `run for the first time`() {
         spannerMigrationApplication.run(argv)
+
+        val actualDatabaseDdls = dbAdminClient.getDatabaseDdl(instanceId, databaseId)
+
+        val expectedNullFilteredIndexDdl = """
+            CREATE NULL_FILTERED INDEX NULL_FILTERED_INDEX ON TableWithNullFilteredIndex(nullableColumn)
+        """.trimIndent()
 
         assert(checkTableExists(dbClient, schemaMigrationTableName))
         assert(checkVersionHaveRow(dbClient))
@@ -67,6 +81,7 @@ class SpannerMigrationApplicationTest {
         assert(checkTableExists(dbClient, "Comments"))
         assert(checkColumnsExists(dbClient, "Status", arrayOf("likesCount")))
         assert(checkIndexExists(dbClient, "UserStatusLikes", "IDX_UserStatusLikes_statusUserRegId_statusTimestampDesc_statusUuid"))
+        assertTrue(actualDatabaseDdls.contains(expectedNullFilteredIndexDdl))
     }
 
     @Test

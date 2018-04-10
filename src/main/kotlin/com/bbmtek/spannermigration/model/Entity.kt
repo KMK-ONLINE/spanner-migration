@@ -2,6 +2,9 @@ package com.bbmtek.spannermigration.model
 
 import com.fasterxml.jackson.annotation.JsonSubTypes
 import com.fasterxml.jackson.annotation.JsonTypeInfo
+import com.fasterxml.jackson.annotation.JsonValue
+
+
 
 /**
  * Created by woi on 11/08/17.
@@ -48,6 +51,7 @@ sealed class Migration {
     data class CreateIndex(
             var indexName: kotlin.String = "",
             var tableName: kotlin.String = "",
+            var indexOptions: List<IndexOption> = listOf(),
             var indexColumns: List<IndexKeyDefinition> = listOf(),
             var storedColumns: List<String> = listOf()
     ): Migration() {
@@ -115,3 +119,12 @@ data class IndexKeyDefinition(
         var name: kotlin.String = "",
         var order: kotlin.String = ""
 )
+
+enum class IndexOption {
+    UNIQUE, NULL_FILTERED;
+
+    @JsonValue
+    fun toValue(): String {
+        return this.name
+    }
+}
